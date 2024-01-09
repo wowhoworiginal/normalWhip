@@ -1,0 +1,188 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class VbossIdle : StateMachineBehaviour
+{
+    private List<string> probabilityCouncil = new List<string>();
+    private string selectedMove;
+    private List<string> travelProbabilityCouncil = new List<string>();  
+
+    public float attackCooldown; //assign in editor 
+    private float cooldownTimer;    
+
+    public int whipCirclebid; //assign ALL these variables in editor 
+    public int whipAttackbid;
+    public int SuckInbid;
+
+    public GameObject Vboss;
+    public SpriteRenderer VbossSprite;
+    public Rigidbody2D VbossBody;    
+    public GameObject Player;
+
+    public int travelLeftbid; //assign ALL these variables in editor 
+    public int travelRightbid;
+    public float moveSpeed;  
+
+    private float movementTimer;
+    public float moveTime;
+    private string selectedTravelDirection;
+
+    override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        Vboss = GameObject.FindGameObjectWithTag("Vboss");
+        VbossSprite = GameObject.FindGameObjectWithTag("Vboss").GetComponent<SpriteRenderer>();
+        VbossBody = GameObject.FindGameObjectWithTag("Vboss").GetComponent<Rigidbody2D>(); 
+        Player = GameObject.FindGameObjectWithTag("Player");
+
+
+
+        //clear list before adding
+        probabilityCouncil.Clear(); 
+        //adds SuckIn's proability
+        for (int i=0; i < SuckInbid; i++) 
+        {
+            probabilityCouncil.Add("SuckIn");
+        }
+
+        //adds WhipAttack's probability
+        for(int i=0; i < whipAttackbid; i++) 
+        {
+            probabilityCouncil.Add("WhipAttack");
+        }
+
+        //add WhipCircle's probability
+        travelProbabilityCouncil.Clear();
+        for(int i=0; i < whipCirclebid; i++) 
+        {
+            probabilityCouncil.Add("WhipCircle");
+        }
+
+        cooldownTimer = 0;
+
+        //boss movement behvaiour probability
+        for (int i = 0; i < travelLeftbid; i++)
+        {
+            travelProbabilityCouncil.Add("MoveLeft");
+        }
+        for (int i = 0; i < travelRightbid; i++)
+        {
+            travelProbabilityCouncil.Add("MoveRight");
+        }
+        movementTimer = moveTime + 1f;
+    }
+
+    override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        //sprite flip
+        if (Vboss.transform.position.x > Player.transform.position.x)
+        {
+            VbossSprite.flipX = false;
+        }
+        else if (Vboss.transform.position.x <= Player.transform.position.x)
+        {
+            VbossSprite.flipX = true;
+        }
+
+        //attack selection and cooldown behaviour
+        if (cooldownTimer < attackCooldown) 
+        {
+            cooldownTimer += Time.deltaTime; 
+        }
+        else if (cooldownTimer >= attackCooldown) 
+        {
+            selectedMove = probabilityCouncil[Random.Range(0, probabilityCouncil.Count)];
+            cooldownTimer = 0;
+            if (selectedMove == "SuckIn")
+            {
+                SuckInTransition(animator);
+                cooldownTimer = 0;
+            }
+            else if (selectedMove == "WhipAttack")
+            {
+                WhipAttackTransition(animator);
+                cooldownTimer = 0;
+
+            }
+            else if (selectedMove == "WhipCircle") 
+            {
+                WhipCircleTransition(animator);
+                cooldownTimer = 0;
+
+            }
+
+            selectedMove = ""; //clears the string
+        }
+
+        //movement
+        Debug.Log(travelProbabilityCouncil);
+        if(movementTimer > moveTime) 
+        {
+            movementTimer = 0;
+            selectedTravelDirection = "";
+            int n = travelProbabilityCouncil.Count;
+
+
+
+                selectedTravelDirection = travelProbabilityCouncil[Random.Range(0, travelProbabilityCouncil.Count)];
+            Debug.Log("MoveReset");
+
+        }
+        else if(movementTimer <= moveTime) 
+        {
+            Debug.Log("MoveActive");  
+            if(selectedTravelDirection == "MoveLeft") 
+            {
+                Debug.Log("moveLeft");
+                VbossBody.velocity = Vector2.left * moveSpeed;
+                movementTimer += Time.deltaTime;
+
+            }
+            else if(selectedTravelDirection == "MoveRight") 
+            {
+                Debug.Log("moveRight");
+                VbossBody.velocity = Vector2.right * moveSpeed;
+                movementTimer += Time.deltaTime;
+
+            }
+
+
+        }
+       
+
+    }
+
+    override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        
+    }
+
+ 
+    private void SuckInTransition(Animator animator) //we get the animator parameter from the OnState___
+    {
+        animator.SetTrigger("SuckIn");
+    }
+
+    private void WhipAttackTransition(Animator animator) 
+    {
+        //make it face the player
+        if(Vboss.transform.position.x > Player.transform.position.x) 
+        {
+            VbossSprite.flipX = false;
+        }
+        else if (Vboss.transform.position.x <= Player.transform.position.x) 
+        {
+            VbossSprite.flipX = true;   
+        }
+
+
+        Debug.Log("WhipAttackTransition");
+        animator.SetTrigger("WhipAttackTransition");
+    }
+
+    private void WhipCircleTransition(Animator animator) 
+    {
+        animator.SetTrigger("WhipCircleTransition"); 
+    }
+
+}
